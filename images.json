@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "images": [
+    {"name": "prometheus", "upstream": "prom/prometheus:v2.47.0", "tag": "v2.47.0"},
+    {"name": "grafana", "upstream": "grafana/grafana:10.0.0", "tag": "10.0.0"},
+    {"name": "alertmanager", "upstream": "prom/alertmanager:v0.26.0", "tag": "v0.26.0"},
+    {"name": "pushgateway", "upstream": "prom/pushgateway:v1.6.0", "tag": "v1.6.0"},
+    {"name": "blackbox-exporter", "upstream": "prom/blackbox-exporter:v0.24.0", "tag": "v0.24.0"},
+    {"name": "snmp-exporter", "upstream": "prom/snmp-exporter:v0.24.1", "tag": "v0.24.1"},
+    {"name": "node-exporter", "upstream": "prom/node-exporter:v1.6.1", "tag": "v1.6.1"},
+    {"name": "cadvisor", "upstream": "gcr.io/cadvisor/cadvisor:v0.47.2", "tag": "v0.47.2", "is_gcr": true}
+  ],
+  "registry": "registry.cn-hangzhou.aliyuncs.com",
+  "namespace": "wenty"
+}

@@ -1,0 +1,17 @@
+# 通用 Dockerfile 模板
+# 通过 build-args 接收上游镜像地址
+
+ARG UPSTREAM_IMAGE
+FROM ${UPSTREAM_IMAGE}
+
+# 可以在这里添加自定义配置
+# 例如：复制自定义配置文件
+# COPY config/ /etc/prometheus/
+
+# 保持原镜像的 ENTRYPOINT 和 CMD
+# 如需覆盖，取消下面注释：
+# ENTRYPOINT []
+# CMD []
+
+LABEL maintainer="auto-sync"
+LABEL source="${UPSTREAM_IMAGE}"

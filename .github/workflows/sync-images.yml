@@ -1,0 +1,118 @@
+name: Sync Images to Aliyun
+
+on:
+  # 每天凌晨 2 点自动运行
+  schedule:
+    - cron: '0 2 * * *'
+  
+  # 允许手动触发
+  workflow_dispatch:
+    inputs:
+      force_rebuild:
+        description: '强制重新构建所有镜像'
+        type: boolean
+        default: false
+        required: false
+
+env:
+  REGISTRY: registry.cn-hangzhou.aliyuncs.com
+  NAMESPACE: wenty
+
+jobs:
+  sync-images:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Prometheus 生态
+          - name: prometheus
+            upstream: prom/prometheus:v2.47.0
+            tag: v2.47.0
+          
+          - name: grafana
+            upstream: grafana/grafana:10.0.0
+            tag: 10.0.0
+          
+          - name: alertmanager
+            upstream: prom/alertmanager:v0.26.0
+            tag: v0.26.0
+          
+          - name: pushgateway
+            upstream: prom/pushgateway:v1.6.0
+            tag: v1.6.0
+          
+          - name: blackbox-exporter
+            upstream: prom/blackbox-exporter:v0.24.0
+            tag: v0.24.0
+          
+          - name: snmp-exporter
+            upstream: prom/snmp-exporter:v0.24.1
+            tag: v0.24.1
+          
+          - name: node-exporter
+            upstream: prom/node-exporter:v1.6.1
+            tag: v1.6.1
+          
+          # GCR 镜像（使用特殊处理）
+          - name: cadvisor
+            upstream: gcr.io/cadvisor/cadvisor:v0.47.2
+            tag: v0.47.2
+            is_gcr: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Aliyun Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ secrets.ALIYUN_USERNAME }}
+          password: ${{ secrets.ALIYUN_PASSWORD }}
+
+      - name: Check if image exists
+        id: check_image
+        run: |
+          TARGET_IMAGE="${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.name }}:${{ matrix.tag }}"
+          
+          # 尝试拉取镜像检查是否存在
+          if docker pull "$TARGET_IMAGE" 2>/dev/null && [ "${{ github.event.inputs.force_rebuild }}" != "true" ]; then
+            echo "Image already exists: $TARGET_IMAGE"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "Image does not exist or force rebuild requested"
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build and push image
+        if: steps.check_image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./dockerfiles/Dockerfile.template
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.name }}:${{ matrix.tag }}
+          build-args: |
+            UPSTREAM_IMAGE=${{ matrix.upstream }}
+          platforms: linux/amd64,linux/arm64
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Verify pushed image
+        if: steps.check_image.outputs.exists == 'false' || github.event.inputs.force_rebuild == 'true'
+        run: |
+          TARGET_IMAGE="${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.name }}:${{ matrix.tag }}"
+          docker pull "$TARGET_IMAGE"
+          docker inspect "$TARGET_IMAGE" | jq -r '.[0].Config.Labels'
+
+      - name: Summary
+        run: |
+          echo "✅ Synced: ${{ matrix.upstream }} → ${{ env.REGISTRY }}/${{ env.NAMESPACE }}/${{ matrix.name }}:${{ matrix.tag }}"
