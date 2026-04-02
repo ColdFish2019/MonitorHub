@@ -8,7 +8,8 @@
     {"name": "blackbox-exporter", "upstream": "prom/blackbox-exporter:v0.24.0", "tag": "v0.24.0"},
     {"name": "snmp-exporter", "upstream": "prom/snmp-exporter:v0.24.1", "tag": "v0.24.1"},
     {"name": "node-exporter", "upstream": "prom/node-exporter:v1.6.1", "tag": "v1.6.1"},
-    {"name": "cadvisor", "upstream": "gcr.io/cadvisor/cadvisor:v0.47.2", "tag": "v0.47.2", "is_gcr": true}
+    {"name": "cadvisor", "upstream": "gcr.io/cadvisor/cadvisor:v0.47.2", "tag": "v0.47.2", "is_gcr": true},
+    {"name": "feishu-webhook", "upstream": "jikunzhang/prometheus-webhook-feishu:latest", "tag": "latest"}
   ],
   "registry": "registry.cn-hangzhou.aliyuncs.com",
   "namespace": "wenty"
